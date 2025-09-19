@@ -1,21 +1,13 @@
 package dev.kush.springkafkacommons;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.KafkaException;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.dao.ConcurrencyFailureException;
-import org.springframework.dao.PessimisticLockingFailureException;
-import org.springframework.dao.QueryTimeoutException;
-import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
@@ -85,36 +77,10 @@ public class KafkaCommonsAutoConfiguration {
         factory.setConcurrency(props.consumerConcurrency());
         factory.setReplyTemplate(kafkaTemplate);
 
-        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate, this::topicPartition);
+        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate, RecovererUtil::getDlqTopicPartition);
 
         // FixedBackOff(retryInterval, maxAttempts) - maxAttempts is number of retries, null means infinite.
         factory.setCommonErrorHandler(new DefaultErrorHandler(recoverer, new FixedBackOff(props.retryIntervalMs(), props.retryMaxAttempts())));
         return factory;
-    }
-
-    TopicPartition topicPartition(ConsumerRecord<?, ?> record, Exception ex) {
-        return switch (ex) {
-            // Retryable exceptions
-            case CannotAcquireLockException e ->
-                    new TopicPartition(record.topic() + ".RETRY_DB_LOCK", record.partition());
-            case PessimisticLockingFailureException e ->
-                    new TopicPartition(record.topic() + ".RETRY_DB_PESSIMISTIC_LOCK", record.partition());
-            case ConcurrencyFailureException e ->
-                    new TopicPartition(record.topic() + ".RETRY_CONCURRENCY", record.partition());
-            case TransientDataAccessResourceException e ->
-                    new TopicPartition(record.topic() + ".RETRY_DB_TRANSIENT", record.partition());
-            case QueryTimeoutException e ->
-                    new TopicPartition(record.topic() + ".RETRY_DB_TIMEOUT", record.partition());
-            case KafkaException e -> new TopicPartition(record.topic() + ".RETRY_KAFKA", record.partition());
-
-            // Non-retryable → straight to DLQ
-            case IllegalArgumentException e ->
-                    new TopicPartition(record.topic() + ".ILLEGAL_ARGUMENT", record.partition());
-            case NullPointerException e -> new TopicPartition(record.topic() + ".NULL_POINTER", record.partition());
-            case RuntimeException e -> new TopicPartition(record.topic() + ".RUNTIME_EXCEPTION", record.partition());
-
-            // Catch-all
-            default -> new TopicPartition(record.topic() + ".UNKNOWN_EXCEPTION", record.partition());
-        };
     }
 }
