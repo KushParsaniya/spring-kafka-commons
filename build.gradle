@@ -1,0 +1,56 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.github.KushParsaniya'
+version = '0.0.1-SNAPSHOT'
+description = 'spring-kafka-commons'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.kafka:spring-kafka:3.3.10'
+    implementation 'org.apache.kafka:kafka_2.13:4.1.0'
+    compileOnly 'org.springframework.boot:spring-boot-autoconfigure:3.5.5'
+
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// If Spring Boot plugin is accidentally applied or present, ensure normal jar is produced
+tasks.matching { it.name == 'bootJar' }.configureEach {
+    enabled = false
+}
+tasks.named('jar') {
+    enabled = true
+}
+
+// Publish configuration — produces pom + artifacts in build/publications/mavenJava
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifactId = 'security-common'
+        }
+    }
+    // Local maven repo useful for local verification (optional)
+    repositories {
+        maven {
+            name = "localTest"
+            url = uri("${buildDir}/repo")
+        }
+    }
+}
+
