@@ -43,7 +43,7 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            artifactId = 'security-common'
+            artifactId = 'spring-kafka-commons'
         }
     }
     // Local maven repo useful for local verification (optional)
