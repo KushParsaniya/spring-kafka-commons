@@ -52,9 +52,6 @@ public class KafkaCommonsAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public ConsumerFactory<String, Object> consumerFactory() {
-        JsonDeserializer<Object> jsonDeserializer = new JsonDeserializer<>(Object.class);
-        jsonDeserializer.addTrustedPackages("*");
-
         Map<String, Object> configs = new HashMap<>();
         configs.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, props.bootstrapServers());
         configs.put(ConsumerConfig.GROUP_ID_CONFIG, props.groupId());
@@ -62,8 +59,8 @@ public class KafkaCommonsAutoConfiguration {
         configs.put(ConsumerConfig.CLIENT_ID_CONFIG, props.clientId());
         configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-
-        return new DefaultKafkaConsumerFactory<>(configs, new StringDeserializer(), jsonDeserializer);
+        configs.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        return new DefaultKafkaConsumerFactory<>(configs);
     }
 
     @Bean
