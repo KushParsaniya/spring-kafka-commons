@@ -1,5 +1,8 @@
 package dev.kush.springkafkacommons;
 
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -17,7 +20,6 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
-import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
@@ -42,9 +44,9 @@ import java.util.Map;
  * based on exception types using {@link RecovererUtil}.
  *
  * @author Kush Parsaniya
- * @since 0.0.1
  * @see KafkaCommonsProperties
  * @see RecovererUtil
+ * @since 0.0.1
  */
 @Configuration
 @EnableConfigurationProperties(KafkaCommonsProperties.class)
@@ -72,6 +74,8 @@ public class KafkaCommonsAutoConfiguration {
      *   <li>JSON serializer for values</li>
      *   <li>Bootstrap servers from properties</li>
      *   <li>Client ID with "-producer" suffix</li>
+     *   <li>Schema registry URL from properties</li>
+     *   <li>Auto register schema from properties</li>
      * </ul>
      *
      * @return configured producer factory for Kafka messages
@@ -82,8 +86,10 @@ public class KafkaCommonsAutoConfiguration {
         Map<String, Object> configs = new HashMap<>();
         configs.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, props.bootstrapServers());
         configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaProtobufSerializer.class);
         configs.put(ProducerConfig.CLIENT_ID_CONFIG, props.clientId() + "-producer");
+        configs.put("schema.registry.url", props.schemaRegistryUrl());
+        configs.put("auto.register.schemas", props.autoRegisterSchemas());
         return new DefaultKafkaProducerFactory<>(configs);
     }
 
@@ -113,6 +119,9 @@ public class KafkaCommonsAutoConfiguration {
      *   <li>Consumer group ID from properties</li>
      *   <li>Auto offset reset to "earliest"</li>
      *   <li>Client ID from properties</li>
+     *   <li>Schema registry URL from properties</li>
+     *   <li>Auto register schema from properties</li>
+     *   <li>Trusted packages from properties if set</li>
      * </ul>
      *
      * @return configured consumer factory for Kafka messages
@@ -126,8 +135,11 @@ public class KafkaCommonsAutoConfiguration {
         configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configs.put(ConsumerConfig.CLIENT_ID_CONFIG, props.clientId());
         configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        configs.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaProtobufDeserializer.class);
+        configs.put("schema.registry.url", props.schemaRegistryUrl());
+        if (StringUtils.isNotBlank(props.trustedPackages())) {
+            configs.put(JsonDeserializer.TRUSTED_PACKAGES, props.trustedPackages());
+        }
         return new DefaultKafkaConsumerFactory<>(configs);
     }
 
