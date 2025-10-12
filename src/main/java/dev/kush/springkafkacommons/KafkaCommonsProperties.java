@@ -20,13 +20,15 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  *   <li><b>retryMaxAttempts</b>: Defaults to {@code 3}</li>
  * </ul>
  *
- * @param bootstrapServers     comma-separated list of Kafka broker addresses (e.g., "localhost:9092")
+ * @param bootstrapServers    comma-separated list of Kafka broker addresses (e.g., "localhost:9092")
  * @param clientId            unique identifier for this Kafka client instance
  * @param groupId             consumer group identifier for Kafka consumers
  * @param consumerConcurrency number of concurrent consumer threads for message processing
  * @param retryIntervalMs     interval in milliseconds between retry attempts for failed messages
  * @param retryMaxAttempts    maximum number of retry attempts before sending to dead letter queue
- *
+ * @param trustedPackages     comma-separated list of packages to trust for deserialization (e.g., "com.example,org.sample")
+ * @param schemaRegistryUrl   URL of the Schema Registry (e.g., "<a href="http://localhost:9094">...</a>")
+ * @param autoRegisterSchemas whether to auto-register schemas in the Schema Registry
  * @author Kush Parsaniya
  * @since 0.0.1
  */
@@ -37,6 +39,9 @@ public record KafkaCommonsProperties(
         @DefaultValue("default-group") String groupId,
         @DefaultValue("3") Integer consumerConcurrency,
         @DefaultValue("1000") long retryIntervalMs,
-        @DefaultValue("3") long retryMaxAttempts
+        @DefaultValue("3") long retryMaxAttempts,
+        @DefaultValue("") String trustedPackages,
+        @DefaultValue("${http://localhost:9094}") String schemaRegistryUrl,
+        @DefaultValue("true") boolean autoRegisterSchemas
 ) {
 }
