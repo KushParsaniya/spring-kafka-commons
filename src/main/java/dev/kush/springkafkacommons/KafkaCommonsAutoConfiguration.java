@@ -51,7 +51,7 @@ import java.util.Map;
 public class KafkaCommonsAutoConfiguration {
 
     private final KafkaCommonsProperties props;
-    private final KafkaTemplate<String, Object> providedTemplateOptional; // optional constructor injection
+    private final KafkaTemplate<String, String> providedTemplateOptional; // optional constructor injection
 
     /**
      * Creates a new Kafka commons auto-configuration instance.
@@ -78,11 +78,11 @@ public class KafkaCommonsAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public ProducerFactory<String, Object> producerFactory() {
+    public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configs = new HashMap<>();
         configs.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, props.bootstrapServers());
         configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configs.put(ProducerConfig.CLIENT_ID_CONFIG, props.clientId() + "-producer");
         return new DefaultKafkaProducerFactory<>(configs);
     }
@@ -98,7 +98,7 @@ public class KafkaCommonsAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public KafkaTemplate<String, Object> kafkaTemplate(ProducerFactory<String, Object> pf) {
+    public KafkaTemplate<String, String> kafkaTemplate(ProducerFactory<String, String> pf) {
         return new KafkaTemplate<>(pf);
     }
 
@@ -119,14 +119,14 @@ public class KafkaCommonsAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public ConsumerFactory<String, Object> consumerFactory() {
+    public ConsumerFactory<String, String> consumerFactory() {
         Map<String, Object> configs = new HashMap<>();
         configs.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, props.bootstrapServers());
         configs.put(ConsumerConfig.GROUP_ID_CONFIG, props.groupId());
         configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configs.put(ConsumerConfig.CLIENT_ID_CONFIG, props.clientId());
         configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configs.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         return new DefaultKafkaConsumerFactory<>(configs);
     }
@@ -154,11 +154,11 @@ public class KafkaCommonsAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(
-            ConsumerFactory<String, Object> consumerFactory,
-            KafkaTemplate<String, Object> kafkaTemplate) {
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
+            ConsumerFactory<String, String> consumerFactory,
+            KafkaTemplate<String, String> kafkaTemplate) {
 
-        ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         factory.setConcurrency(props.consumerConcurrency());
         factory.setReplyTemplate(kafkaTemplate);
