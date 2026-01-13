@@ -1,5 +1,6 @@
 package dev.kush.springkafkacommons;
 
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -195,5 +196,20 @@ public class KafkaCommonsAutoConfiguration {
                         .build())
                 .toArray(NewTopic[]::new);
         return new KafkaAdmin.NewTopics(topics);
+    }
+
+    /**
+     * Creates a KafkaAdmin bean configured with the bootstrap servers from properties.
+     * <p>
+     * This admin client is used for administrative operations like creating topics.
+     *
+     * @return configured KafkaAdmin instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public KafkaAdmin kafkaAdmin() {
+        return new KafkaAdmin(Map.of(
+                AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, props.bootstrapServers()
+        ));
     }
 }
