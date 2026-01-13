@@ -1,5 +1,6 @@
 package dev.kush.springkafkacommons;
 
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -9,13 +10,16 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.util.backoff.FixedBackOff;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -163,5 +167,33 @@ public class KafkaCommonsAutoConfiguration {
         // FixedBackOff(retryInterval, maxAttempts) - maxAttempts is number of retries, null means infinite.
         factory.setCommonErrorHandler(new DefaultErrorHandler(recoverer, new FixedBackOff(props.retryIntervalMs(), props.retryMaxAttempts())));
         return factory;
+    }
+
+    /**
+     * Dynamically creates Kafka topics based on the configured topics map.
+     * <p>
+     * Topics are configured in application properties using:
+     * <pre>
+     * kafka.commons.topics:
+     *   topic1: 3
+     *   topic2: 5
+     * </pre>
+     * Where the key is the topic name and the value is the partition count.
+     *
+     * @return NewTopics wrapper containing all configured topics
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public KafkaAdmin.NewTopics kafkaTopics() {
+        if (props.topics() == null || props.topics().isEmpty()) {
+            return new KafkaAdmin.NewTopics();
+        }
+
+        NewTopic[] topics = props.topics().entrySet().stream()
+                .map(entry -> TopicBuilder.name(entry.getKey())
+                        .partitions(entry.getValue())
+                        .build())
+                .toArray(NewTopic[]::new);
+        return new KafkaAdmin.NewTopics(topics);
     }
 }

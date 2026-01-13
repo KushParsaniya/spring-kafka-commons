@@ -3,6 +3,8 @@ package dev.kush.springkafkacommons;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
+import java.util.Map;
+
 /**
  * Configuration properties for Kafka commons library.
  * <p>
@@ -42,6 +44,7 @@ public record KafkaCommonsProperties(
         @DefaultValue("3") long retryMaxAttempts,
         @DefaultValue("") String trustedPackages,
         @DefaultValue("${http://localhost:9094}") String schemaRegistryUrl,
-        @DefaultValue("true") boolean autoRegisterSchemas
+        @DefaultValue("true") boolean autoRegisterSchemas,
+        Map<String, Integer> topics
 ) {
 }
