@@ -20,6 +20,8 @@ import java.util.Map;
  *   <li><b>consumerConcurrency</b>: Defaults to {@code 3}</li>
  *   <li><b>retryIntervalMs</b>: Defaults to {@code 1000} ms</li>
  *   <li><b>retryMaxAttempts</b>: Defaults to {@code 3}</li>
+ *   <li><b>username</b>: Defaults to {@code admin}</li>
+ *   <li><b>password</b>: Defaults to {@code admin}</li>
  * </ul>
  *
  * @param bootstrapServers    comma-separated list of Kafka broker addresses (e.g., "localhost:9092")
@@ -31,6 +33,8 @@ import java.util.Map;
  * @param trustedPackages     comma-separated list of packages to trust for deserialization (e.g., "com.example,org.sample")
  * @param schemaRegistryUrl   URL of the Schema Registry (e.g., "<a href="http://localhost:9094">...</a>")
  * @param autoRegisterSchemas whether to auto-register schemas in the Schema Registry
+ * @param username            Kafka username for authentication
+ * @param password            Kafka password for authentication
  * @author Kush Parsaniya
  * @since 0.0.1
  */
@@ -45,6 +49,8 @@ public record KafkaCommonsProperties(
         @DefaultValue("") String trustedPackages,
         @DefaultValue("${http://localhost:9094}") String schemaRegistryUrl,
         @DefaultValue("true") boolean autoRegisterSchemas,
+        @DefaultValue("admin") String username,
+        @DefaultValue("admin") String password,
         Map<String, Integer> topics
 ) {
 }

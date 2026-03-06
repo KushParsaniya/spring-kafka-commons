@@ -4,6 +4,8 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -72,6 +74,7 @@ public class KafkaCommonsAutoConfiguration {
      *   <li>JSON serializer for values</li>
      *   <li>Bootstrap servers from properties</li>
      *   <li>Client ID with "-producer" suffix</li>
+     *   <li>SASL/PLAIN authentication if username and password are provided</li>
      * </ul>
      *
      * @return configured producer factory for Kafka messages
@@ -84,6 +87,7 @@ public class KafkaCommonsAutoConfiguration {
         configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configs.put(ProducerConfig.CLIENT_ID_CONFIG, props.clientId() + "-producer");
+        addSecurityConfig(configs);
         return new DefaultKafkaProducerFactory<>(configs);
     }
 
@@ -113,6 +117,7 @@ public class KafkaCommonsAutoConfiguration {
      *   <li>Consumer group ID from properties</li>
      *   <li>Auto offset reset to "earliest"</li>
      *   <li>Client ID from properties</li>
+     *   <li>SASL/PLAIN authentication if username and password are provided</li>
      * </ul>
      *
      * @return configured consumer factory for Kafka messages
@@ -128,6 +133,7 @@ public class KafkaCommonsAutoConfiguration {
         configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configs.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        addSecurityConfig(configs);
         return new DefaultKafkaConsumerFactory<>(configs);
     }
 
@@ -202,14 +208,28 @@ public class KafkaCommonsAutoConfiguration {
      * Creates a KafkaAdmin bean configured with the bootstrap servers from properties.
      * <p>
      * This admin client is used for administrative operations like creating topics.
+     * It also includes SASL/PLAIN authentication if username and password are provided.
      *
      * @return configured KafkaAdmin instance
      */
     @Bean
     @ConditionalOnMissingBean
     public KafkaAdmin kafkaAdmin() {
-        return new KafkaAdmin(Map.of(
-                AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, props.bootstrapServers()
-        ));
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, props.bootstrapServers());
+        addSecurityConfig(configs);
+        return new KafkaAdmin(configs);
+    }
+
+    private void addSecurityConfig(Map<String, Object> configs) {
+        if (props.username() != null && !props.username().isBlank() &&
+                props.password() != null && !props.password().isBlank()) {
+            configs.put("security.protocol", SecurityProtocol.SASL_PLAINTEXT.name);
+            configs.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
+            configs.put(SaslConfigs.SASL_JAAS_CONFIG, String.format(
+                    "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";",
+                    props.username(), props.password()
+            ));
+        }
     }
 }
