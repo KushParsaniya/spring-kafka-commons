@@ -49,8 +49,12 @@ publishing {
     // Local maven repo useful for local verification (optional)
     repositories {
         maven {
-            name = "localTest"
-            url = uri("${buildDir}/repo")
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/KushParsaniya/spring-kafka-commons")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
         }
     }
 }
